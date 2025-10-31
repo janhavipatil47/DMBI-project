@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPL Analytics Dashboard - Enhanced</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { 
+            font-family: 'Poppins', sans-serif;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        *::-webkit-scrollbar { 
+            display: none;
+        }
+        html, body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            max-width: 100vw;
+        }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+        }
+        .gradient-text { 
+            background: linear-gradient(135deg, #e5e7eb, #f3f4f6); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+            background-size: 200% 200%;
+        }
+        @keyframes gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .card { 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            padding: 30px; 
+            margin-bottom: 30px; 
+            transition: transform 0.3s;
+            overflow: hidden;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .stat-card { 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            color: white; 
+            border-radius: 20px; 
+            padding: 30px; 
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-10px); box-shadow: 0 20px 60px rgba(102, 126, 234, 0.6); }
+        .btn { 
+            padding: 14px 28px; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            transition: all 0.3s; 
+            cursor: pointer; 
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+        }
+        .btn:hover::before { width: 300px; height: 300px; top: -150px; left: -150px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #4dabf7); color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        .btn-secondary { background: rgba(255,255,255,0.9); color: #667eea; }
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .loading { display: flex; justify-content: center; align-items: center; height: 200px; }
+        .spinner { 
+            width: 60px; height: 60px; 
+            border: 6px solid rgba(102, 126, 234, 0.2); 
+            border-top: 6px solid #667eea; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .search-input, select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+        .search-input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        .dropdown.active { display: block; }
+        .dropdown-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .dropdown-item:hover { background: #f5f5f5; }
+        .profile-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .metric { 
+            background: rgba(255,255,255,0.2); 
+            padding: 20px; 
+            border-radius: 12px; 
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        .badge-aggressive { background: #ff6b6b; color: white; }
+        .badge-consistent { background: #51cf66; color: white; }
+        .badge-balanced { background: #4dabf7; color: white; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse;
+            display: block;
+            overflow-x: auto;
+        }
+        table::-webkit-scrollbar { display: none; }
+        th { background: #f8f9fa; padding: 15px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; }
+        td { padding: 15px; border-bottom: 1px solid #e9ecef; }
+        tr:hover { background: #f8f9fa; }
+        .glow { animation: glow 2s ease-in-out infinite; }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); } 50% { box-shadow: 0 0 40px rgba(102, 126, 234, 0.8); } }
+        
+        .container {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+        
+        /* Win Probability Gauge */
+        .probability-gauge {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+        }
+        .gauge-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                #667eea 0deg,
+                #667eea var(--probability-deg),
+                #e5e7eb var(--probability-deg),
+                #e5e7eb 360deg
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .gauge-inner {
+            width: 140px;
+            height: 140px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .gauge-value {
+            font-size: 48px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gauge-label {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Enhanced Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-6xl font-extrabold gradient-text mb-4 glow">
+                🏏 IPL Analytics Dashboard
+            </h1>
+          
+            <div class="mt-4 flex justify-center gap-2 flex-wrap">
+                <span class="badge" style="background: linear-gradient(135deg, #fee140,#43e97b);">K-Means Clustering</span>
+                
+                <span class="badge" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">Win Probability</span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="glass rounded-2xl shadow-2xl mb-10 p-4">
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button class="btn btn-primary tab-btn" data-tab="overview">📊 Overview</button>
+                <button class="btn btn-secondary tab-btn" data-tab="teams">👥 Teams</button>
+                <button class="btn btn-secondary tab-btn" data-tab="venues">🏟️ Venues</button>
+                <button class="btn btn-secondary tab-btn" data-tab="players">🏏 Players</button>
+                <button class="btn btn-secondary tab-btn" data-tab="trends">📈 Trends</button>
+                <button class="btn btn-secondary tab-btn" data-tab="clustering">🤖 AI Clustering</button>
+                <button class="btn btn-secondary tab-btn" data-tab="winprob">🎯 Win Probability</button>
+                <button class="btn btn-secondary tab-btn" data-tab="details">📋 Details</button>
+            </div>
+        </nav>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card">
+                    <p class="text-5xl font-bold mb-2" id="stat-matches">...</p>
+                    <p class="text-sm opacity-90">Total Matches</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-5xl font-bold mb-2" id="stat-seasons">...</p>
+                    <p class="text-sm opacity-90">Total Seasons</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-5xl font-bold mb-2" id="stat-teams">...</p>
+                    <p class="text-sm opacity-90">Teams</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-5xl font-bold mb-2" id="stat-deliveries">...</p>
+                    <p class="text-sm opacity-90">Deliveries</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEAMS TAB -->
+        <div id="teams" class="tab-content">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="col-span-2 card">
+                    <h3 class="text-2xl font-bold mb-4 text-purple-600">Team Performance (Win %)</h3>
+                    <p class="text-sm text-gray-500 mb-4">Click a team for seasonal trends</p>
+                    <div class="loading" id="teams-loading">
+                        <div class="spinner"></div>
+                    </div>
+                    <canvas id="teamsChart" style="display:none; max-height: 400px;"></canvas>
+                </div>
+
+                <aside class="card">
+                    <h4 class="text-xl font-bold mb-4 text-purple-600">Team Search</h4>
+                    <div class="search-box">
+                        <input type="text" id="team-search" class="search-input" placeholder="Search team..." />
+                        <div class="dropdown" id="team-dropdown"></div>
+                    </div>
+                    <div id="team-profile" style="display:none;">
+                        <div class="profile-card">
+                            <h3 id="team-name" class="text-2xl font-bold mb-4"></h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="metric">
+                                    <div class="text-sm opacity-90">Matches</div>
+                                    <div id="team-matches" class="text-2xl font-bold"></div>
+                                </div>
+                                <div class="metric">
+                                    <div class="text-sm opacity-90">Wins</div>
+                                    <div id="team-wins" class="text-2xl font-bold"></div>
+                                </div>
+                                <div class="metric col-span-2">
+                                    <div class="text-sm opacity-90">Win %</div>
+                                    <div id="team-winpct" class="text-3xl font-bold"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="teamProfileChart" style="max-height: 200px;"></canvas>
+                    </div>
+                </aside>
+            </div>
+
+            <div id="team-drilldown-card" class="card mt-6" style="display:none;">
+                <h3 class="text-2xl font-bold mb-4" id="team-drilldown-title"></h3>
+                <canvas id="teamDrilldownChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+
+        <!-- VENUES TAB -->
+        <div id="venues" class="tab-content">
+            <div class="card">
+                <h3 class="text-2xl font-bold mb-4 text-purple-600">Venue Analysis</h3>
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <canvas id="venuesChart" style="display:none; max-height: 400px;"></canvas>
+            </div>
+        </div>
+
+        <!-- PLAYERS TAB -->
+        <div id="players" class="tab-content">
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="card col-span-1">
+                    <h4 class="text-xl font-bold mb-4 text-purple-600">Player Search</h4>
+                    <div class="search-box">
+                        <input type="text" id="player-search" class="search-input" placeholder="Search player..." />
+                        <div class="dropdown" id="player-dropdown"></div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="player-feature-btn btn btn-primary w-full mb-2" data-feature="batsmen">Top Batsmen</button>
+                        <button class="player-feature-btn btn btn-secondary w-full" data-feature="bowlers">Top Bowlers</button>
+                    </div>
+                </div>
+
+                <div class="card col-span-3">
+                    <div id="player-profile" style="display:none;">
+                        <div class="profile-card">
+                            <div class="flex justify-between items-start flex-wrap">
+                                <div>
+                                    <h3 id="player-name" class="text-3xl font-bold mb-2"></h3>
+                                    <p id="player-role" class="text-lg opacity-90"></p>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="metric">
+                                        <div class="text-xs">Runs</div>
+                                        <div id="player-runs" class="text-xl font-bold"></div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="text-xs">SR</div>
+                                        <div id="player-sr" class="text-xl font-bold"></div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="text-xs">Avg</div>
+                                        <div id="player-avg" class="text-xl font-bold"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 mt-4">
+                            <div class="card">
+                                <h4 class="font-semibold mb-3">Performance Trend</h4>
+                                <canvas id="playerFormChart" style="max-height: 180px;"></canvas>
+                            </div>
+                            <div class="card">
+                                <h4 class="font-semibold mb-3">Recent Matches</h4>
+                                <div id="player-recent" class="text-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="players-chart-view">
+                        <h3 class="text-2xl font-bold mb-4" id="playersChartTitle">Top Batsmen</h3>
+                        <div class="loading" id="players-loading">
+                            <div class="spinner"></div>
+                        </div>
+                        <canvas id="playersChart" style="display:none; max-height: 400px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRENDS TAB -->
+        <div id="trends" class="tab-content">
+            <div class="card">
+                <h3 class="text-2xl font-bold mb-4 text-purple-600">Season Trends</h3>
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <canvas id="trendsChart" style="display:none; max-height: 400px;"></canvas>
+            </div>
+        </div>
+
+        <!-- AI CLUSTERING TAB -->
+        <div id="clustering" class="tab-content">
+            <div class="card">
+                <h3 class="text-2xl font-bold mb-4 text-purple-600">Batsmen Clustering (K-Means)</h3>
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <canvas id="batsmenClusterChart" style="display:none; max-height: 400px;"></canvas>
+            </div>
+            <div class="card mt-6">
+                <h3 class="text-2xl font-bold mb-4 text-purple-600">Team Clustering (Hierarchical)</h3>
+                <div id="teamClusterTableContainer"></div>
+            </div>
+        </div>
+
+        <!-- WIN PROBABILITY TAB -->
+        <div id="winprob" class="tab-content">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Input Form -->
+                <div class="card">
+                    <h3 class="text-2xl font-bold mb-6 text-purple-600">🎯 Match Details</h3>
+                    
+                    <div class="form-group">
+                        <label>Batting Team</label>
+                        <select id="batting-team" class="search-input">
+                            <option value="">Select Team</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Bowling Team</label>
+                        <select id="bowling-team" class="search-input">
+                            <option value="">Select Team</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Venue/City</label>
+                        <select id="venue" class="search-input">
+                            <option value="">Select Venue</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Target Runs</label>
+                        <input type="number" id="target" class="search-input" placeholder="e.g., 180" />
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label>Current Score</label>
+                            <input type="number" id="score" class="search-input" placeholder="e.g., 120" />
+                        </div>
+                        <div class="form-group">
+                            <label>Wickets Lost</label>
+                            <input type="number" id="wickets" class="search-input" min="0" max="10" placeholder="e.g., 3" />
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label>Overs Completed</label>
+                            <input type="number" id="overs" class="search-input" step="0.1" placeholder="e.g., 15.3" />
+                        </div>
+                        <div class="form-group">
+                            <label>Runs Last 5 Overs</label>
+                            <input type="number" id="last5" class="search-input" placeholder="e.g., 45" />
+                        </div>
+                    </div>
+                    
+                    <button id="calculate-prob" class="btn btn-primary w-full mt-4">Calculate Win Probability</button>
+                </div>
+                
+                <!-- Results -->
+                <div class="card">
+                    <h3 class="text-2xl font-bold mb-6 text-purple-600">📊 Prediction Results</h3>
+                    
+                    <div id="prob-result" style="display:none;">
+                        <div class="probability-gauge" id="prob-gauge" style="--probability-deg: 0deg;">
+                            <div class="gauge-circle">
+                                <div class="gauge-inner">
+                                    <div class="gauge-value" id="prob-value">0%</div>
+                                    <div class="gauge-label">Win Chance</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                                <p class="text-3xl font-bold mb-1" id="batting-prob">0%</p>
+                                <p class="text-sm opacity-90" id="batting-team-name">Batting Team</p>
+                            </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #fa709a, #fee140);">
+                                <p class="text-3xl font-bold mb-1" id="bowling-prob">0%</p>
+                                <p class="text-sm opacity-90" id="bowling-team-name">Bowling Team</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <h4 class="font-bold mb-3">Key Factors</h4>
+                            <div id="prob-factors"></div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <canvas id="probChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div id="prob-placeholder" class="text-center py-12 text-gray-400">
+                        <p class="text-4xl mb-4">🎯</p>
+                        <p class="text-lg">Enter match details to predict win probability</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DETAILS TAB -->
+        <div id="details" class="tab-content">
+            <div class="card">
+                <h3 class="text-2xl font-bold mb-4 text-purple-600">Runs by Over</h3>
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+                <canvas id="detailsChart" style="display:none; max-height: 400px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+<script>
+const COLORS = {
+    primary: ['#667eea', '#764ba2', '#f093fb'],
+    secondary: ['#4facfe', '#00f2fe'],
+    success: ['#43e97b', '#38f9d7'],
+    danger: ['#fa709a', '#fee140'],
+    multi: ['#43076e', '#7413ba', '#a121fc', '#c26ffc', '#9f24b3', '#e769fa', '#f1a7fc', '#ed1cce', '#f567e0', '#f799e9']
+};
+
+const charts = {};
+let cache = { players: null, teams: null, playerStats: null, teamPerf: null, venues: null };
+
+function destroyChart(id) {
+    if (charts[id]) {
+        charts[id].destroy();
+        delete charts[id];
+    }
+}
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-secondary');
+        });
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-secondary');
+        
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(btn.dataset.tab).classList.add('active');
+        
+        loadTabData(btn.dataset.tab);
+    });
+});
+
+async function loadTabData(tab) {
+    if (tab === 'overview') loadOverview();
+    else if (tab === 'teams') loadTeams();
+    else if (tab === 'venues') loadVenues();
+    else if (tab === 'players') { setupPlayerButtons(); loadPlayersChart(); }
+    else if (tab === 'trends') loadTrends();
+    else if (tab === 'clustering') { await loadClustering(); await loadTeamClusterTable(); }
+    else if (tab === 'winprob') await loadWinProbForm();
+    else if (tab === 'details') loadDetails();
+}
+
+async function loadOverview() {
+    try {
+        const res = await fetch('http://localhost:5000/api/data/overview');
+        const data = await res.json();
+        document.getElementById('stat-matches').textContent = data.total_matches.toLocaleString();
+        document.getElementById('stat-seasons').textContent = data.total_seasons;
+        document.getElementById('stat-teams').textContent = data.total_teams;
+        document.getElementById('stat-deliveries').textContent = data.total_deliveries.toLocaleString();
+    } catch(e) { console.error(e); }
+}
+
+async function loadTeams() {
+    const loading = document.getElementById('teams-loading');
+    const ctx = document.getElementById('teamsChart');
+    loading.style.display = 'flex';
+    
+    try {
+        if (!cache.teamPerf) {
+            const res = await fetch('http://localhost:5000/api/data/team-performance');
+            cache.teamPerf = await res.json();
+            cache.teams = cache.teamPerf.team_stats.map(t => t.team);
+        }
+        
+        const data = cache.teamPerf.team_stats.slice(0, 10);
+        
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(t => t.team),
+                datasets: [{
+                    label: 'Win %',
+                    data: data.map(t => t.win_percentage),
+                    backgroundColor: COLORS.multi
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                onClick: (e, el) => {
+                    if (el.length > 0) loadTeamDrilldown(data[el[0].index].team);
+                }
+            }
+        });
+        
+        loading.style.display = 'none';
+        ctx.style.display = 'block';
+        
+        setupTeamSearch();
+    } catch(e) { console.error(e); }
+}
+
+function setupTeamSearch() {
+    const input = document.getElementById('team-search');
+    const dropdown = document.getElementById('team-dropdown');
+    
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        if (!query) {
+            dropdown.classList.remove('active');
+            return;
+        }
+        
+        const filtered = cache.teams.filter(t => t.toLowerCase().includes(query));
+        dropdown.innerHTML = filtered.map(t => `<div class="dropdown-item" data-team="${t}">${t}</div>`).join('');
+        dropdown.classList.add('active');
+        
+        dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                loadTeamProfile(item.dataset.team);
+                dropdown.classList.remove('active');
+                input.value = '';
+            });
+        });
+    });
+}
+
+async function loadTeamProfile(team) {
+    try {
+        const res = await fetch(`http://localhost:5000/api/players/team-stats?team=${encodeURIComponent(team)}`);
+        const data = await res.json();
+        
+        document.getElementById('team-profile').style.display = 'block';
+        document.getElementById('team-name').textContent = team;
+        document.getElementById('team-matches').textContent = data.matches || '-';
+        document.getElementById('team-wins').textContent = data.wins || '-';
+        document.getElementById('team-winpct').textContent = data.win_pct ? data.win_pct + '%' : '-';
+        
+        const ctx = document.getElementById('teamProfileChart');
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.seasons?.map(s => s.season) || [],
+                datasets: [{
+                    label: 'Avg Runs',
+                    data: data.seasons?.map(s => s.avg_runs) || [],
+                    borderColor: COLORS.primary[0],
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function loadTeamDrilldown(team) {
+    const card = document.getElementById('team-drilldown-card');
+    const title = document.getElementById('team-drilldown-title');
+    const ctx = document.getElementById('teamDrilldownChart');
+    
+    card.style.display = 'block';
+    title.textContent = `${team} - Seasonal Performance`;
+    
+    try {
+        const res = await fetch(`http://localhost:5000/api/data/team-details/${encodeURIComponent(team)}`);
+        const data = await res.json();
+        
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.performance_by_season.map(p => p.season),
+                datasets: [{
+                    label: 'Win %',
+                    data: data.performance_by_season.map(p => p.win_percentage),
+                    borderColor: COLORS.primary[0],
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function loadVenues() {
+    const ctx = document.getElementById('venuesChart');
+    const loading = ctx.parentElement.querySelector('.loading');
+    
+    try {
+        const res = await fetch('http://localhost:5000/api/data/venue-analysis');
+        const data = await res.json();
+        cache.venues = data.city_matches.map(c => c.city);
+        
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.city_matches.map(c => c.city),
+                datasets: [{
+                    data: data.city_matches.map(c => c.match_count),
+                    backgroundColor: COLORS.multi
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+        
+        loading.style.display = 'none';
+        ctx.style.display = 'block';
+    } catch(e) { console.error(e); }
+}
+
+function setupPlayerButtons() {
+    document.querySelectorAll('.player-feature-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.player-feature-btn').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-secondary');
+            });
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-secondary');
+            
+            if (cache.playerStats) {
+                drawPlayersChart(cache.playerStats, btn.dataset.feature);
+            }
+        });
+    });
+    
+    setupPlayerSearch();
+}
+
+function setupPlayerSearch() {
+    const input = document.getElementById('player-search');
+    const dropdown = document.getElementById('player-dropdown');
+    
+    input.addEventListener('input', async (e) => {
+        const query = e.target.value.trim();
+        if (query.length < 2) {
+            dropdown.classList.remove('active');
+            return;
+        }
+        
+        try {
+            const res = await fetch(`http://localhost:5000/api/players/suggest?q=${encodeURIComponent(query)}`);
+            const players = await res.json();
+            
+            dropdown.innerHTML = players.map(p => `<div class="dropdown-item" data-player="${p}">${p}</div>`).join('');
+            dropdown.classList.add('active');
+            
+            dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    loadPlayerProfile(item.dataset.player);
+                    dropdown.classList.remove('active');
+                    input.value = '';
+                });
+            });
+        } catch(e) { console.error(e); }
+    });
+}
+
+async function loadPlayerProfile(name) {
+    try {
+        const res = await fetch(`http://localhost:5000/api/players/stats?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        
+        document.getElementById('players-chart-view').style.display = 'none';
+        document.getElementById('player-profile').style.display = 'block';
+        
+        document.getElementById('player-name').textContent = data.name;
+        document.getElementById('player-role').textContent = data.role || 'Batsman';
+        document.getElementById('player-runs').textContent = data.total_runs || '-';
+        document.getElementById('player-sr').textContent = data.strike_rate?.toFixed(1) || '-';
+        document.getElementById('player-avg').textContent = data.average?.toFixed(1) || '-';
+        
+        const recent = data.recent_matches || [];
+        document.getElementById('player-recent').innerHTML = recent.length 
+            ? recent.map(r => `<div class="py-2 border-b">${r.date} vs ${r.opponent}: ${r.runs} (${r.balls})</div>`).join('')
+            : '<p class="text-gray-500">No recent data</p>';
+        
+        const ctx = document.getElementById('playerFormChart');
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: recent.map(r => r.date).reverse(),
+                datasets: [{
+                    label: 'Runs',
+                    data: recent.map(r => r.runs).reverse(),
+                    borderColor: COLORS.primary[0],
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+    } catch(e) { console.error(e); }
+}
+
+async function loadPlayersChart() {
+    const ctx = document.getElementById('playersChart');
+    const loading = document.getElementById('players-loading');
+    
+    loading.style.display = 'flex';
+    
+    try {
+        if (!cache.playerStats) {
+            const res = await fetch('http://localhost:5000/api/data/player-stats');
+            cache.playerStats = await res.json();
+        }
+        
+        drawPlayersChart(cache.playerStats, 'batsmen');
+        
+        loading.style.display = 'none';
+        ctx.style.display = 'block';
+    } catch(e) { console.error(e); }
+}
+
+function drawPlayersChart(data, feature) {
+    const ctx = document.getElementById('playersChart');
+    destroyChart(ctx.id);
+    
+    const chartData = feature === 'batsmen'
+        ? { labels: data.top_batsmen.map(p => p.player).slice(0,10), data: data.top_batsmen.map(p => p.total_runs).slice(0,10), label: 'Runs' }
+        : { labels: data.top_bowlers.map(p => p.player).slice(0,10), data: data.top_bowlers.map(p => p.wickets).slice(0,10), label: 'Wickets' };
+    
+    document.getElementById('playersChartTitle').textContent = feature === 'batsmen' ? 'Top Batsmen' : 'Top Bowlers';
+    
+    charts[ctx.id] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: chartData.label,
+                data: chartData.data,
+                backgroundColor: COLORS.multi
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true
+        }
+    });
+}
+
+async function loadTrends() {
+    const ctx = document.getElementById('trendsChart');
+    const loading = ctx.parentElement.querySelector('.loading');
+    
+    try {
+        const res = await fetch('http://localhost:5000/api/data/season-trends');
+        const data = await res.json();
+        
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.boundaries_trend.map(t => t.season),
+                datasets: [
+                    {
+                        label: 'Sixes',
+                        data: data.boundaries_trend.map(t => t.sixes),
+                        borderColor: COLORS.primary[0],
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Fours',
+                        data: data.boundaries_trend.map(t => t.fours),
+                        borderColor: COLORS.secondary[0],
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+        
+        loading.style.display = 'none';
+        ctx.style.display = 'block';
+    } catch(e) { console.error(e); }
+}
+
+async function loadClustering() {
+    const ctx = document.getElementById('batsmenClusterChart');
+    const loading = ctx.parentElement.querySelector('.loading');
+    
+    try {
+        const res = await fetch('http://localhost:5000/api/clustering/batsman-clusters');
+        const data = await res.json();
+        
+        const datasets = [];
+        const clusters = {};
+        
+        data.clusters.forEach(p => {
+            if (!clusters[p.cluster]) clusters[p.cluster] = [];
+            clusters[p.cluster].push({ x: p.strike_rate, y: p.average, label: p.player });
+        });
+        
+        Object.keys(clusters).forEach((k, i) => {
+            datasets.push({
+                label: data.clusters.find(p => p.cluster == k).cluster_name,
+                data: clusters[k],
+                backgroundColor: COLORS.multi[i]
+            });
+        });
+        
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ctx.raw.label
+                        }
+                    }
+                }
+            }
+        });
+        
+        loading.style.display = 'none';
+        ctx.style.display = 'block';
+    } catch(e) { console.error(e); }
+}
+
+async function loadTeamClusterTable() {
+    const container = document.getElementById('teamClusterTableContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    
+    try {
+        const res = await fetch('http://localhost:5000/api/clustering/team-clusters');
+        const data = await res.json();
+        
+        let html = '<table><thead><tr><th>Team</th><th>Cluster</th><th>Win %</th></tr></thead><tbody>';
+        data.clusters.forEach(t => {
+            html += `<tr><td>${t.team}</td><td><span class="badge badge-${t.cluster_name.toLowerCase()}">${t.cluster_name}</span></td><td>${t.win_percentage.toFixed(1)}%</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch(e) { console.error(e); }
+}
+
+// WIN PROBABILITY FUNCTIONS
+async function loadWinProbForm() {
+    try {
+        // Load teams
+        if (!cache.teams) {
+            const res = await fetch('http://localhost:5000/api/data/team-performance');
+            const data = await res.json();
+            cache.teams = data.team_stats.map(t => t.team);
+        }
+        
+        // Load venues
+        if (!cache.venues) {
+            const res = await fetch('http://localhost:5000/api/data/venue-analysis');
+            const data = await res.json();
+            cache.venues = data.city_matches.map(c => c.city);
+        }
+        
+        // Populate dropdowns
+        const battingTeam = document.getElementById('batting-team');
+        const bowlingTeam = document.getElementById('bowling-team');
+        const venue = document.getElementById('venue');
+        
+        battingTeam.innerHTML = '<option value="">Select Team</option>' + cache.teams.map(t => `<option value="${t}">${t}</option>`).join('');
+        bowlingTeam.innerHTML = '<option value="">Select Team</option>' + cache.teams.map(t => `<option value="${t}">${t}</option>`).join('');
+        venue.innerHTML = '<option value="">Select Venue</option>' + cache.venues.map(v => `<option value="${v}">${v}</option>`).join('');
+        
+    } catch(e) { console.error(e); }
+}
+
+document.getElementById('calculate-prob').addEventListener('click', async () => {
+    const battingTeam = document.getElementById('batting-team').value;
+    const bowlingTeam = document.getElementById('bowling-team').value;
+    const venue = document.getElementById('venue').value;
+    const target = parseInt(document.getElementById('target').value);
+    const score = parseInt(document.getElementById('score').value);
+    const wickets = parseInt(document.getElementById('wickets').value);
+    const overs = parseFloat(document.getElementById('overs').value);
+    const last5 = parseInt(document.getElementById('last5').value);
+    
+    if (!battingTeam || !bowlingTeam || !venue || !target || !score || wickets === '' || !overs || !last5) {
+        alert('Please fill all fields');
+        return;
+    }
+    
+    try {
+        const res = await fetch('http://localhost:5000/api/win-probability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                batting_team: battingTeam,
+                bowling_team: bowlingTeam,
+                city: venue,
+                target: target,
+                score: score,
+                wickets: wickets,
+                overs: overs,
+                runs_last_5: last5
+            })
+        });
+        
+        const data = await res.json();
+        
+        // Show result
+        document.getElementById('prob-placeholder').style.display = 'none';
+        document.getElementById('prob-result').style.display = 'block';
+        
+        const battingProb = (data.probability * 100).toFixed(1);
+        const bowlingProb = (100 - battingProb).toFixed(1);
+        
+        // Update gauge
+        document.getElementById('prob-value').textContent = battingProb + '%';
+        document.getElementById('prob-gauge').style.setProperty('--probability-deg', (data.probability * 360) + 'deg');
+        
+        // Update team probabilities
+        document.getElementById('batting-prob').textContent = battingProb + '%';
+        document.getElementById('bowling-prob').textContent = bowlingProb + '%';
+        document.getElementById('batting-team-name').textContent = battingTeam;
+        document.getElementById('bowling-team-name').textContent = bowlingTeam;
+        
+        // Show factors
+        const factors = [
+            { name: 'Required Run Rate', value: data.required_run_rate.toFixed(2) },
+            { name: 'Current Run Rate', value: data.current_run_rate.toFixed(2) },
+            { name: 'Runs Required', value: target - score },
+            { name: 'Balls Remaining', value: ((20 - overs) * 6).toFixed(0) }
+        ];
+        
+        document.getElementById('prob-factors').innerHTML = factors.map(f => 
+            `<div class="flex justify-between py-2 border-b">
+                <span class="font-semibold">${f.name}</span>
+                <span class="text-purple-600 font-bold">${f.value}</span>
+            </div>`
+        ).join('');
+        
+        // Draw chart
+        const ctx = document.getElementById('probChart');
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [battingTeam, bowlingTeam],
+                datasets: [{
+                    label: 'Win Probability %',
+                    data: [battingProb, bowlingProb],
+                    backgroundColor: [COLORS.success[0], COLORS.danger[0]]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+    } catch(e) {
+        console.error(e);
+        alert('Error calculating probability');
+    }
+});
+
+async function loadDetails() {
+    const ctx = document.getElementById('detailsChart');
+    const loading = ctx.parentElement.querySelector('.loading');
+    
+    try {
+        const res = await fetch('http://localhost:5000/api/data/match-details');
+        const data = await res.json();
+        
+        const labels = Array.from({length: 20}, (_, i) => i + 1);
+        const runsByOver = {};
+        data.runs_by_over.forEach(r => {
+            runsByOver[r.over] = (runsByOver[r.over] || 0) + r.total_runs;
+        });
+        
+        destroyChart(ctx.id);
+        charts[ctx.id] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Runs',
+                    data: labels.map(o => runsByOver[o] || 0),
+                    backgroundColor: COLORS.multi
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+        
+        loading.style.display = 'none';
+        ctx.style.display = 'block';
+    } catch(e) { console.error(e); }
+}
+
+loadTabData('overview');
+</script>
+</body>
+</html>

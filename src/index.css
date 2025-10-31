@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-lg border border-slate-200 p-6;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200;
+  }
+  
+  .stat-card {
+    @apply bg-gradient-to-br from-primary-500 to-primary-600 text-white p-6 rounded-xl shadow-lg;
+  }
+  
+  .chart-container {
+    @apply bg-white rounded-xl shadow-lg border border-slate-200 p-6;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 to-cricket-500 bg-clip-text text-transparent;
+  }
+  
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Loading animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Chart animations */
+.recharts-wrapper {
+  transition: all 0.3s ease;
+}
+
+/* Responsive text */
+@media (max-width: 640px) {
+  .responsive-text {
+    font-size: 0.875rem;
+  }
+}
